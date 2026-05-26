@@ -413,8 +413,18 @@ pub async fn transfer_command(args: &TransferArgs) -> Result<(), Box<dyn std::er
 
     validate_vault_address(&from_address)?;
     validate_vault_address(&args.to_address)?;
+    
+    let status_url = format!("http://{}:{}/api/status", args.host, args.http_port);
+    let status_resp = reqwest::Client::new().get(&status_url).send().await?;
+    let status:crate::f1r3fly_api::NodeStatus = serde_json::from_str(&status_resp.text().await?)?;
+    let decimals = status.native_token_decimals;
 
-    let amount_dust = args.amount * 100_000_000;
+    let amount_dust = if args.whole_tokens {
+        args.amount * 10u64.pow(decimals)
+    }  else {
+        args.amount
+    };
+
     println!(
         "Transfer: {} -> {} ({} dust)",
         from_address, args.to_address, amount_dust
