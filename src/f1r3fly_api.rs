@@ -30,7 +30,7 @@ pub struct NodeStatus {
     #[serde(rename = "nativeTokenSymbol", default)]
     pub native_token_symbol: String,
     #[serde(rename = "nativeTokenDecimals", default)]
-    pub native_token_decimals: u32,
+    pub native_token_decimals: Option<u32>,
     #[serde(rename = "peerList", default)]
     pub peer_list: Vec<serde_json::Value>,
     // Numeric and bool fields use Option so a missing field (e.g. from an older
@@ -47,6 +47,21 @@ pub struct NodeStatus {
     pub current_epoch: Option<i64>,
     #[serde(rename = "epochLength", default)]
     pub epoch_length: Option<i32>,
+}
+
+/// Fetch the node's status from its HTTP `/api/status` endpoint.
+pub async fn get_node_status(
+    host: &str,
+    port: u16,
+) -> Result<NodeStatus, Box<dyn std::error::Error>> {
+    let url = format!("http://{host}:{port}/api/status");
+    let response = reqwest::Client::new()
+        .get(&url)
+        .send()
+        .await?
+        .error_for_status()?;
+    let status: NodeStatus = serde_json::from_str(&response.text().await?)?;
+    Ok(status)
 }
 
 /// Deploy execution detail from the node's `/api/deploy/{id}` endpoint.

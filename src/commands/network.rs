@@ -1,6 +1,6 @@
 use crate::args::*;
 use crate::connection_manager::{ConnectionConfig, F1r3flyConnectionManager};
-use crate::f1r3fly_api::{F1r3flyApi, ProposeResult};
+use crate::f1r3fly_api::{get_node_status, F1r3flyApi, ProposeResult};
 use std::fs;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
@@ -414,14 +414,19 @@ pub async fn transfer_command(args: &TransferArgs) -> Result<(), Box<dyn std::er
     validate_vault_address(&from_address)?;
     validate_vault_address(&args.to_address)?;
     
-    let status_url = format!("http://{}:{}/api/status", args.host, args.http_port);
-    let status_resp = reqwest::Client::new().get(&status_url).send().await?;
-    let status:crate::f1r3fly_api::NodeStatus = serde_json::from_str(&status_resp.text().await?)?;
-    let decimals = status.native_token_decimals;
-
     let amount_dust = if args.whole_tokens {
-        args.amount * 10u64.pow(decimals)
-    }  else {
+        // Whole-token mode: ask the node how many decimals the native token has.
+        let status = get_node_status(&args.host, args.http_port).await?;
+        let decimals = status
+            .native_token_decimals
+            .ok_or("node did not report token decimals; cannot convert whole tokens")?;
+        let factor = 10u64
+            .checked_pow(decimals)
+            .ok_or("token decimals too large for u64 multiplier")?;
+        args.amount
+            .checked_mul(factor)
+            .ok_or("amount overflows u64 after applying token decimals")?
+    } else {
         args.amount
     };
 

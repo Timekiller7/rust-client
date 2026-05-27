@@ -34,7 +34,7 @@ pub async fn status_command(args: &HttpArgs) -> Result<(), Box<dyn std::error::E
                         "  Native Token:  {} ({}, {} decimals)",
                         status.native_token_name,
                         status.native_token_symbol,
-                        status.native_token_decimals
+                        fmt(status.native_token_decimals)
                     );
                 }
                 fn fmt<T: std::fmt::Display>(v: Option<T>) -> String {
