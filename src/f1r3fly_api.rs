@@ -49,21 +49,6 @@ pub struct NodeStatus {
     pub epoch_length: Option<i32>,
 }
 
-/// Fetch the node's status from its HTTP `/api/status` endpoint.
-pub async fn get_node_status(
-    host: &str,
-    port: u16,
-) -> Result<NodeStatus, Box<dyn std::error::Error>> {
-    let url = format!("http://{host}:{port}/api/status");
-    let response = reqwest::Client::new()
-        .get(&url)
-        .send()
-        .await?
-        .error_for_status()?;
-    let status: NodeStatus = serde_json::from_str(&response.text().await?)?;
-    Ok(status)
-}
-
 /// Deploy execution detail from the node's `/api/deploy/{id}` endpoint.
 /// Unified DeployResponse — full view includes all fields,
 /// summary view omits Optional fields.

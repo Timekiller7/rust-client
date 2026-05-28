@@ -551,7 +551,7 @@ impl DiscoveredPeer {
 }
 
 // Helper function to query a node's status and return full JSON response
-async fn query_node_status(
+pub(crate) async fn query_node_status(
     client: &reqwest::Client,
     host: &str,
     port: u16,
