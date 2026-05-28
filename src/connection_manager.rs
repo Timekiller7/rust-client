@@ -270,23 +270,23 @@ impl F1r3flyConnectionManager {
     ) -> Result<Option<crate::f1r3fly_api::DeployFinalizationStatus>, ConnectionError> {
         let api = self.observer_api()?;
         let http_port = self.observer_http_port();
-        // Fallback: the node itself also serves the finalization endpoint on its own
-        // HTTP port — used when the observer is unreachable (e.g. standalone).
-        let node_api = self.api()?;
-        let node_http_port = self.config.http_port;
-        let node_differs = node_http_port != http_port;
         let max_attempts = (total_timeout_secs / poll_interval_secs.max(1)).max(1) as u32;
 
         for attempt in 1..=max_attempts {
             let mut result = api
                 .deploy_finalization_status(deploy_sig_hex, http_port)
                 .await;
-            if result.is_err() && node_differs {
-                if let Ok(node_status) = node_api
-                    .deploy_finalization_status(deploy_sig_hex, node_http_port)
-                    .await
-                {
-                    result = Ok(node_status);
+            // If the observer is unreachable (a standalone node has none, or the
+            // observer is on a different host), fall back to the deploy node, which
+            // serves the same endpoint on its own HTTP port.
+            if result.is_err() {
+                if let Ok(node_api) = self.api() {
+                    if let Ok(node_status) = node_api
+                        .deploy_finalization_status(deploy_sig_hex, self.config.http_port)
+                        .await
+                    {
+                        result = Ok(node_status);
+                    }
                 }
             }
 
