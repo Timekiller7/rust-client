@@ -257,7 +257,7 @@ impl<'a> F1r3flyApi<'a> {
         let signing_key = self
             .signing_key
             .as_ref()
-            .expect("build_deploy_msg requires a signing key (read-only client cannot deploy)");
+            .expect("build_deploy_msg requires a signing key");
         let secp = Secp256k1::new();
         let message = Secp256k1Message::from_digest(digest.into());
         let signature = secp.sign_ecdsa(message, signing_key);
