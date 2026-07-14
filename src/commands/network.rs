@@ -152,7 +152,10 @@ pub async fn estimate_cost_command(
     let rholang_code =
         fs::read_to_string(&args.file).map_err(|e| format!("Failed to read file: {}", e))?;
 
-    let f1r3fly_api = F1r3flyApi::new_readonly(&args.host, args.port);
+    let f1r3fly_api = match &args.private_key {
+        Some(pk) => F1r3flyApi::new(pk, &args.host, args.port)?,
+        None => F1r3flyApi::new_readonly(&args.host, args.port),
+    };
 
     let (_result, _block_info, cost) = f1r3fly_api
         .exploratory_deploy(

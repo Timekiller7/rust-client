@@ -9,6 +9,7 @@ use f1r3fly_models::casper::{
 };
 use f1r3fly_models::rhoapi::g_unforgeable::UnfInstance;
 use f1r3fly_models::rhoapi::{GDeployId, GUnforgeable, Par};
+use secp256k1::Secp256k1;
 
 impl<'a> F1r3flyApi<'a> {
     pub async fn exploratory_deploy(
@@ -19,10 +20,20 @@ impl<'a> F1r3flyApi<'a> {
     ) -> Result<(String, String, u64), Box<dyn std::error::Error>> {
         let mut client = DeployServiceClient::connect(self.grpc_url()).await?;
 
+        let deployer: Vec<u8> = match &self.signing_key {
+            Some(secret_key) => {
+                let secp = Secp256k1::new();
+                let public_key = secret_key.public_key(&secp);
+                public_key.serialize_uncompressed().to_vec()
+            }
+            None => Vec::new(),
+        };
+
         let query = ExploratoryDeployQuery {
             term: rho_code.to_string(),
             block_hash: block_hash.unwrap_or("").to_string(),
             use_pre_state_hash,
+            deployer: deployer.into(),
         };
 
         let response = client.exploratory_deploy(query).await?;

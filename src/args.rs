@@ -331,6 +331,11 @@ pub struct ExploratoryDeployArgs {
     /// Use pre-state hash instead of post-state hash
     #[arg(short, long, default_value_t = false)]
     pub use_pre_state: bool,
+
+    /// Private key in hex format (optional) - derives the deployer identity
+    /// so estimates for identity-dependent contracts are accurate
+    #[arg(short = 'k', long, env = "FIREFLY_PRIVATE_KEY")]
+    pub private_key: Option<String>,
 }
 
 /// Arguments for generate-public-key command
